@@ -15,7 +15,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -24,21 +26,20 @@ public class MediaServiceImpl implements MediaService {
     @Autowired(required = false)
     private Storage storage;
 
-    @Value("${unstray.storage.type:local}")
+    @Value("${findora.storage.type:local}")
     private String storageType;
 
-    @Value("${unstray.storage.local-dir:./uploads}")
+    @Value("${findora.storage.local-dir:./uploads}")
     private String localDir;
 
-    @Value("${unstray.storage.local-url-prefix:http://localhost:8083/uploads/}")
+    @Value("${findora.storage.local-url-prefix:http://localhost:8083/uploads/}")
     private String localUrlPrefix;
 
-    @Value("${unstray.storage.bucket-name:unstray-media-bucket}")
+    @Value("${findora.storage.bucket-name:findora-media-bucket}")
     private String bucketName;
 
     @Override
     public MediaUploadResponse uploadFile(MultipartFile file) {
-
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File cannot be empty");
         }
@@ -55,6 +56,16 @@ public class MediaServiceImpl implements MediaService {
         } else {
             return uploadToLocal(file, originalFileName, objectName);
         }
+    }
+
+    @Override
+    public List<MediaUploadResponse> uploadMultipleFiles(List<MultipartFile> files) {
+        if (files == null || files.isEmpty()) {
+            throw new IllegalArgumentException("Files list cannot be empty");
+        }
+        return files.stream()
+                .map(this::uploadFile)
+                .collect(Collectors.toList());
     }
 
     private MediaUploadResponse uploadToLocal(MultipartFile file, String originalFileName, String objectName) {
